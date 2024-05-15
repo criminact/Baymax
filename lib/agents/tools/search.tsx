@@ -41,12 +41,15 @@ export const searchTool = ({
     const filledQuery =
       query.length < 5 ? query + ' '.repeat(5 - query.length) : query
     let searchResult
-    const searchAPI: 'tavily' | 'exa' = 'tavily'
+    const searchAPI: 'tavily' | 'exa' | 'serper' = 'serper'
     try {
-      searchResult =
-        searchAPI === 'tavily'
-          ? await tavilySearch(filledQuery, max_results, search_depth)
-          : await exaSearch(query)
+        if (searchAPI === 'serper'){
+          // searchResult = await serperSearch(query, max_results, searchType)
+        } else if(searchAPI === 'travily') {
+          searchResult = await tavilySearch(filledQuery, max_results, search_depth)
+        }else{
+          searchResult = await exaSearch(query)
+        }
     } catch (error) {
       console.error('Search API error:', error)
       hasError = true
@@ -96,6 +99,35 @@ async function tavilySearch(
   const data = await response.json()
   return data
 }
+
+// async function serperSearch(
+//   query: string,
+//   maxResults: number = 10,
+//   searchType: string = "Search"
+// ): Promise<any> {
+//   const apiKey = process.env.SERPER_API_KEY
+//   const response = await fetch('https://api.tavily.com/search', {
+//     method: 'POST',
+//     headers: {
+//       'Content-Type': 'application/json'
+//     },
+//     body: JSON.stringify({
+//       api_key: apiKey,
+//       query,
+//       max_results: maxResults < 5 ? 5 : maxResults,
+//       search_depth: searchDepth,
+//       include_images: true,
+//       include_answers: true
+//     })
+//   })
+
+//   if (!response.ok) {
+//     throw new Error(`Error: ${response.status}`)
+//   }
+
+//   const data = await response.json()
+//   return data
+// }
 
 async function exaSearch(query: string, maxResults: number = 10): Promise<any> {
   const apiKey = process.env.EXA_API_KEY
