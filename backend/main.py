@@ -21,7 +21,7 @@ from unstructured.documents.elements import NarrativeText, Title, Text
 from sse_starlette.sse import EventSourceResponse
 
 groq = Groq(
-    api_key="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",
+    api_key="",
 )
 app = FastAPI()
 
@@ -115,7 +115,7 @@ def getSerperResults(query, url, num):
         })
     
     headers = {
-        'X-API-KEY': '40bb8f50ccb374957cd3b900808f55e56781be88',
+        'X-API-KEY': '',
         'Content-Type': 'application/json'
     }
 
