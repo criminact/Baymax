@@ -10,7 +10,7 @@ import { CoreMessage, nanoid, ToolResultPart } from 'ai'
 import { Spinner } from '@/components/ui/spinner'
 import { Section } from '@/components/section'
 import { FollowupPanel } from '@/components/followup-panel'
-import { inquire, researcher, taskManager, querySuggestor } from '@/lib/agents'
+import { inquire, querySuggestor } from '@/lib/agents'
 import { writer } from '@/lib/agents/writer'
 import { saveChat } from '@/lib/actions/chat'
 import { Chat } from '@/lib/types'
@@ -85,27 +85,6 @@ async function submit(formData?: FormData, skip?: boolean) {
   async function processEvents() {
     let action: any = { object: { next: 'proceed' } }
     // If the user skips the task, we proceed to the search
-    if (!skip) action = (await taskManager(messages)) ?? action
-
-    if (action.object.next === 'inquire') {
-      // Generate inquiry
-      const inquiry = await inquire(uiStream, messages)
-      uiStream.done()
-      isGenerating.done()
-      isCollapsed.done(false)
-      aiState.done({
-        ...aiState.get(),
-        messages: [
-          ...aiState.get().messages,
-          {
-            id: nanoid(),
-            role: 'assistant',
-            content: `inquiry: ${inquiry?.question}`
-          }
-        ]
-      })
-      return
-    }
 
     // Set the collapsed state to true
     isCollapsed.done(true)
@@ -173,15 +152,6 @@ async function submit(formData?: FormData, skip?: boolean) {
     }
 
     if (!errorOccurred) {
-      // Generate related queries
-      const relatedQueries = await querySuggestor(uiStream, messages)
-      // Add follow-up panel
-      uiStream.append(
-        <Section title="Follow-up">
-          <FollowupPanel />
-        </Section>
-      )
-
       // Add the answer, related queries, and follow-up panel to the state
       // Wait for 0.5 second before adding the answer to the state
       await new Promise(resolve => setTimeout(resolve, 500))
@@ -195,12 +165,6 @@ async function submit(formData?: FormData, skip?: boolean) {
             role: 'assistant',
             content: answer,
             type: 'answer'
-          },
-          {
-            id: groupeId,
-            role: 'assistant',
-            content: JSON.stringify(relatedQueries),
-            type: 'related'
           },
           {
             id: groupeId,

@@ -41,11 +41,9 @@ export const searchTool = ({
     const filledQuery =
       query.length < 5 ? query + ' '.repeat(5 - query.length) : query
     let searchResult
-    const searchAPI: 'tavily' | 'exa' | 'serper' = 'serper'
+    const searchAPI: 'tavily' | 'exa' = 'tavily'
     try {
-        if (searchAPI === 'serper'){
-          // searchResult = await serperSearch(query, max_results, searchType)
-        } else if(searchAPI === 'travily') {
+        if(searchAPI === 'travily') {
           searchResult = await tavilySearch(filledQuery, max_results, search_depth)
         }else{
           searchResult = await exaSearch(query)
