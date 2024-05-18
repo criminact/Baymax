@@ -19,11 +19,22 @@ from chromadb.utils import embedding_functions
 from unstructured.partition.html import partition_html
 from unstructured.documents.elements import NarrativeText, Title, Text
 from sse_starlette.sse import EventSourceResponse
+from fastapi.middleware.cors import CORSMiddleware
 
 groq = Groq(
-    api_key="",
+    api_key="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",
 )
 app = FastAPI()
+
+origins = ["*"]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 search = ['Wikipedia and Facts', 'Social Media: Instagram', 'Social Media: Twitter', 'LinkedIn and People', 'Social Media: Facebook', 'Finance and Crypto', 'Stackoverflow and Coding', 'Where to Watch Movies and TV Shows', 'Reddit or Advice, Opinion, Reviews', 'Glassdoor and Business Reviews', 'Unknown']
 shopping = ['Shopping and Purchasing']
@@ -115,7 +126,7 @@ def getSerperResults(query, url, num):
         })
     
     headers = {
-        'X-API-KEY': '',
+        'X-API-KEY': '40bb8f50ccb374957cd3b900808f55e56781be88',
         'Content-Type': 'application/json'
     }
 
@@ -162,24 +173,26 @@ def final_answering(messages, sources):
                 '''
         })
 
-        stream = groq.chat.completions.create(
+        answer = groq.chat.completions.create(
             messages=messages,
             model="llama3-70b-8192",
             temperature=0.5,
             max_tokens=2500,
             top_p=1,
             stop=None,
-            stream=True,
+            stream=False,
         )
 
-        answer = ''
+        return answer.choices[0].message.content
 
-        for chunk in stream:
-            if chunk.choices[0].delta.content:
-                answer += chunk.choices[0].delta.content
-                yield{
-                    'data': chunk.choices[0].delta.content
-                }
+        # answer = ''
+
+        # for chunk in stream:
+        #     if chunk.choices[0].delta.content:
+        #         answer += chunk.choices[0].delta.content
+        #         yield{
+        #             'data': chunk.choices[0].delta.content
+        #         }
     else:
         messages.insert(0, {
         'role': 'system',
@@ -193,30 +206,34 @@ def final_answering(messages, sources):
                 '''
         })
 
-        stream = groq.chat.completions.create(
+        answer = groq.chat.completions.create(
             messages=messages,
             model="llama3-70b-8192",
             temperature=0.5,
             max_tokens=2500,
             top_p=1,
             stop=None,
-            stream=True,
+            stream=False,
         )
 
-        answer = ''
+        # answer = ''
 
-        for chunk in stream:
-            if chunk.choices[0].delta.content:
-                answer += chunk.choices[0].delta.content
-                yield{
-                    'data': chunk.choices[0].delta.content
-                }
+        # for chunk in stream:
+        #     if chunk.choices[0].delta.content:
+        #         answer += chunk.choices[0].delta.content
+        #         yield{
+        #             'data': chunk.choices[0].delta.content
+        #         }
+
+        return answer.choices[0].message.content
 
     print(answer)
 
-@app.get("/getSources")
+@app.post("/getSources")
 async def get_sources(request: Request):
     request_dict = await request.json()
+
+    print(request_dict)
 
     messages = request_dict["messages"]
 
@@ -231,7 +248,7 @@ async def get_sources(request: Request):
                     that is given to a search engine API. Always be succint and use the same words as the input.
                     
                     {
-                        'query': '<rewritten query>'
+                        "query": "<rewritten query>"
                     }
                     """
             },
@@ -250,7 +267,9 @@ async def get_sources(request: Request):
         stream=False,
     )
 
-    query = json.loads(query_rewriting.choices[0].message.content)
+    print(query_rewriting.choices[0].message.content)
+
+    query = json.loads(query_rewriting.choices[0].message.content, strict=False)
 
     print(query)
 
@@ -354,7 +373,7 @@ async def get_sources(request: Request):
 
     return sources
 
-@app.get("/getAnswer")
+@app.post("/getAnswer")
 async def get_answer(request: Request):
 
     request_dict = await request.json()
@@ -363,6 +382,8 @@ async def get_answer(request: Request):
     sources = request_dict["sources"]
 
     if sources:
-        return EventSourceResponse(final_answering(messages, sources), media_type="text/event-stream")
+        # return EventSourceResponse(final_answering(messages, sources), media_type="text/event-stream")
+        return final_answering(messages, sources)
     else:
-        return EventSourceResponse(final_answering(messages, None), media_type="text/event-stream")
+        # return EventSourceResponse(final_answering(messages, None), media_type="text/event-stream")
+        return final_answering(messages, None)
